@@ -128,6 +128,13 @@ function SentList({ name, input }: { name: string; input: unknown }) {
         <Row label="Years">{num(data.years)}</Row>
       </dl>
     );
+  if (name === "compare_plans")
+    return (
+      <dl className="space-y-1">
+        <Row label="Plan">Copper Plus</Row>
+        <Row label="Years">{num(data.years)}</Row>
+      </dl>
+    );
   return (
     <dl className="space-y-1">
       <Row label="Product">{nameOf(data.product)}</Row>
@@ -159,6 +166,50 @@ function BackList({ step }: { step: ToolStep }) {
   if (step.state === "error")
     return <p className="text-chart-3">{text(out) || "That tool failed."}</p>;
   if (!isRec(out)) return <p>{text(out)}</p>;
+
+  if (step.name === "compare_plans") {
+    const years = num(out.years);
+    const span = years === 1 ? "1 year" : `${years} years`;
+    const cheaper = text(out.cheaper);
+    return (
+      <div>
+        <ul className="space-y-1">
+          <li className="flex items-center justify-between gap-3">
+            <span>Monthly, {span}</span>
+            <span className="font-medium">
+              {formatUsd(num(out.monthlyTotalUsd))}
+              {cheaper === "monthly" && (
+                <Pill className="bg-accent text-accent-foreground ml-2">
+                  Cheaper
+                </Pill>
+              )}
+            </span>
+          </li>
+          <li className="flex items-center justify-between gap-3">
+            <span>Yearly, {span}</span>
+            <span className="font-medium">
+              {formatUsd(num(out.annualTotalUsd))}
+              {cheaper === "annual" && (
+                <Pill className="bg-accent text-accent-foreground ml-2">
+                  Cheaper
+                </Pill>
+              )}
+            </span>
+          </li>
+        </ul>
+        <p className="mt-2 border-t pt-2">
+          {cheaper === "same"
+            ? "Both cost the same."
+            : `Paying ${cheaper === "annual" ? "yearly" : "monthly"} saves `}
+          {cheaper !== "same" && (
+            <span className="text-primary font-bold">
+              {formatUsd(num(out.savingsUsd))}
+            </span>
+          )}
+        </p>
+      </div>
+    );
+  }
 
   if (step.name === "calculate_cost")
     return (

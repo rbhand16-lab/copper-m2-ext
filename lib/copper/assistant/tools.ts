@@ -127,6 +127,42 @@ export function calculateCost(input: CalculateCostInput): CostBreakdown {
   return { lines, totalUsd };
 }
 
+export type ComparePlansInput = { years: number };
+
+export type PlanComparison = {
+  years: number;
+  monthlyTotalUsd: number;
+  annualTotalUsd: number;
+  cheaper: "monthly" | "annual" | "same";
+  savingsUsd: number;
+};
+
+export const comparePlansInput: z.ZodType<ComparePlansInput> = z.object({
+  years: z.number().int().min(1).max(5),
+});
+
+/** compare_plans: Copper Plus paid monthly vs. yearly over some years. */
+export function comparePlans(input: ComparePlansInput): PlanComparison {
+  const plan = getPlans().find((p) => p.id === "copper-plus");
+  if (!plan) throw new Error("Copper Plus isn't in the catalog");
+  const monthlyTotalUsd = toCents(plan.monthlyUsd * 12 * input.years);
+  const annualTotalUsd = toCents(plan.annualUsd * input.years);
+  const savingsUsd = toCents(Math.abs(monthlyTotalUsd - annualTotalUsd));
+  const cheaper =
+    savingsUsd === 0
+      ? "same"
+      : annualTotalUsd < monthlyTotalUsd
+        ? "annual"
+        : "monthly";
+  return {
+    years: input.years,
+    monthlyTotalUsd,
+    annualTotalUsd,
+    cheaper,
+    savingsUsd,
+  };
+}
+
 export const checkAvailabilityInput: z.ZodType<CheckAvailabilityInput> =
   z.object({
     product: productIds,
@@ -209,6 +245,12 @@ export const copperTools = {
       "Work out the total cost of devices plus a plan over 1 to 5 years.",
     inputSchema: calculateCostInput,
     execute: async (input) => calculateCost(input),
+  }),
+  compare_plans: tool({
+    description:
+      "Compare paying for Copper Plus monthly versus yearly over 1 to 5 years, and say which is cheaper.",
+    inputSchema: comparePlansInput,
+    execute: async (input) => comparePlans(input),
   }),
   check_availability: tool({
     description:
